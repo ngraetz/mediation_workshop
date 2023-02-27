@@ -1,0 +1,715 @@
+---
+title: "Causal mediation workshop"
+author: "Nick Graetz^1^"
+date: "2/20/2023"
+output: 
+    beamer_presentation:
+        incremental: false
+        includes: 
+            in_header: myPennstyle.tex
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+dropbox <- 'C:/Users/ncgra/Dropbox/'
+# dropbox <- 'C:/Users/ngraetz/Dropbox/'
+fig_dir <- paste0(dropbox, 'Penn/repos/utility/mediation_workshop/mediation_figures/')
+setwd(fig_dir)
+```
+
+---
+
+\frametitle{Outline}
+
+\begin{enumerate}
+  \item Theory 
+  \item Conventional mediation
+  \item Causal estimands
+  \item Mediation with post-treatment confounding
+  \item R examples: mediation using \emph{CMAverse} and \emph{paths}
+  \item Advanced topics in mediation: multiple mediators, path-specific effects, time-varying and cumulative estimands
+  \item Theory 
+\end{enumerate}
+
+---
+
+\frametitle{Background}
+
+>- A central aim in sociological and demographic analysis is \emph{explaining} the source of differences.
+
+>- We love to theorize mechanisms: Why is X related to Y?
+
+>- Quant studies: \emph{“It looks like there is an effect of X on Y, but it goes away when I control for M”}
+
+---
+
+\frametitle{Background}
+
+>- But quantitative causal mediation is really hard and requires tons of assumptions - \bf{theoretically}, not just implementation.
+
+>- Most modern methodological developments explore relatively simple use cases. 
+
+>- Should we do it anyway? 
+
+---
+
+\frametitle{Estimands}
+
+``` {r echo = FALSE, out.width= '70%', fig.align = "center"}
+knitr::include_graphics(paste0(fig_dir,"estimands.JPG"))
+```
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,red,->] (4) to (5);
+		\draw [thick,red,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,red,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\small
+>- Notice that we are already committing to a theoretical framework where these "pathways" are conceptually separable.
+
+>- This is important when thinking about complex exposures! (see Sen & Wasow 2016: Race as a Bundle of Sticks, Kohler-Hausmann 2019)
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\begin{align*}
+Y &= \beta_0 + \beta_1 A \\
+Y &= \theta_0 + \theta_1 A + \theta_2 M \\
+\text{Proportion mediated} &= (\beta_1 - \theta_1) / \beta_1
+\end{align*}
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\begin{align*}
+Y &= \beta_0 + \beta_1 A \\
+Y &= \theta_0 + \theta_1 A + \theta_2 M \\
+\text{Proportion mediated} &= (\beta_1 - \theta_1) / \beta_1
+\end{align*}
+
+\small
+
+>- Baron-Kenny mediation (1986): 115,563 citations.
+
+>- Non-linear model? Use KHB adjustment.
+
+---
+
+\frametitle{Direct effects}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\begin{align*}
+Y &= \beta_0 + \beta_1 A \\
+Y &= \theta_0 + \theta_1 A + \theta_2 M \\
+\text{Proportion mediated} &= (\beta_1 - \theta_1) / \beta_1
+\end{align*}
+
+\small
+>- When is this causal?
+
+\begin{align*}
+\text{CDE}_{M=m^\text{*}} &= E[Y_{am^\text{*}}] - E[Y_{a^\text{*}m^\text{*}}]
+\end{align*}
+
+---
+
+\frametitle{Causal inference}
+
+>- Causal inference in the potential outcomes tradition:
+
+>- \emph{Instrument-based}: assumptions revolve around validity of instrument; direct randomization to treatment is the most plausible instrument.
+
+>- \emph{Confounder-control}: assumptions revolve around unmeasured confounding.
+
+>- Mediation analysis with instrument-based methods is very hard. There are people working on study designs ("crossover designs"), but I’m not going to talk about this. See Imai, Tingley and Yamamoto (2013, JRSS-A).
+
+---
+
+\frametitle{Causal mediation}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{Causal mediation}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (1) at (-2,3) {$\pmb{V}$};
+		\node (2) at (2,1) {$A$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+	  \draw [thick,->] (4) to (5);
+	  \draw [thick,->] (1) to [bend right=20] (2);
+		\draw [thick,->] (1) to [bend left=20] (4);
+		\draw [thick,->] (1) to [bend left=20] (5);
+		\draw [thick,->] (2) to (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\tiny
+\begin{enumerate}
+    \item No unobserved confounding of $A \longrightarrow Y$ ($\pmb{V}$ contains all relevant confounding variables of $A$ and $Y$).
+    \item No unobserved confounding of $A \longrightarrow M$ ($\pmb{V}$ contains all relevant confounding variables of $A$ and $M$).
+\end{enumerate}   
+
+---
+
+\frametitle{Causal mediation}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (1) at (-2,3) {$\pmb{V}$};
+		\node (2) at (2,1) {$A$};
+		\node (3) at (7,1) {$L$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+		\draw [thick,->] (3) to (4);
+	  \draw [thick,->] (4) to (5);
+	  \draw [thick,->] (1) to [bend right=20] (2);
+		\draw [thick,->] (1) to [bend left=20] (3);
+		\draw [thick,->] (1) to [bend left=20] (4);
+		\draw [thick,->] (1) to [bend left=20] (5);
+		\draw [thick,->] (2) to [bend right=30] (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+		\draw [thick,->] (3) to [bend right=30] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\tiny
+\begin{enumerate}
+    \item No unobserved confounding of $A \longrightarrow Y$ ($\pmb{V}$ contains all relevant confounding variables of $A$ and $Y$).
+    \item No unobserved confounding of $A \longrightarrow M$ ($\pmb{V}$ contains all relevant confounding variables of $A$ and $M$).
+    \item No unobserved post-treatment confounding of $M \longrightarrow Y$ ($\pmb{L}$ contains all relevant post-treatment confounding variables of $M$ and $Y$).
+\end{enumerate}
+
+---
+
+\frametitle{Causal mediation}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (1) at (-2,3) {$\pmb{V}$};
+		\node (2) at (2,1) {$A$};
+		\node (3) at (7,1) {$L$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+		\draw [dashed,thick,->] (2) to (3);
+		\draw [thick,->] (3) to (4);
+	  \draw [thick,->] (4) to (5);
+	  \draw [thick,->] (1) to [bend right=20] (2);
+		\draw [thick,->] (1) to [bend left=20] (3);
+		\draw [thick,->] (1) to [bend left=20] (4);
+		\draw [thick,->] (1) to [bend left=20] (5);
+		\draw [thick,->] (2) to [bend right=30] (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+		\draw [thick,->] (3) to [bend right=30] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\tiny
+\begin{enumerate}
+    \item No unobserved confounding of $A \longrightarrow Y$ ($\pmb{V}$ contains all relevant confounding variables of $A$ and $Y$).
+    \item No unobserved confounding of $A \longrightarrow M$ ($\pmb{V}$ contains all relevant confounding variables of $A$ and $M$).
+    \item No unobserved post-treatment confounding of $M \longrightarrow Y$ ($\pmb{L}$ contains all relevant post-treatment confounding variables of $M$ and $Y$).
+    \item No post-treatment confounders ($\pmb{L}$) are affected by $A$ (the dotted arrow between $A$ and $\pmb{L}$ does not exist; the "cross-world independence assumption").
+\end{enumerate}
+
+---
+
+\frametitle{Causal mediation}
+
+>- “Post-treatment confounding” or “exposure-induced mediator-outcome confounding.”
+
+>- Best description of this is Wodtke, Harding, & Elwert (2011, ASR).
+
+>- This is impossible to handle with Baron-Kenny mediation. You’ll likely always overestimate the proportion of the total effect that is mediated.  
+
+>- Requires “g-methods”: IPTW (weighting) or g-formula (impute counterfactuals). See Naimi, Cole, & Kennedy (2016, IJE): An introduction to g-methods.  
+
+---
+
+\frametitle{Causal mediation}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (1) at (-2,3) {$\pmb{V}$};
+		\node (2) at (2,1) {$A$};
+		\node (3) at (7,1) {$L$};
+		\node (4) at (12,1) {$M$};
+		\node (5) at (17,1) {$Y$};
+		\draw [thick,->] (2) to (3);
+		\draw [thick,->] (3) to (4);
+	  \draw [thick,->] (4) to (5);
+	  \draw [thick,->] (1) to [bend right=20] (2);
+		\draw [thick,->] (1) to [bend left=20] (3);
+		\draw [thick,->] (1) to [bend left=20] (4);
+		\draw [thick,->] (1) to [bend left=20] (5);
+		\draw [thick,->] (2) to [bend right=30] (4);
+		\draw [thick,->] (2) to [bend right=40] (5);
+		\draw [thick,->] (3) to [bend right=30] (5);
+	\end{tikzpicture}}
+\end{figure}
+
+\begin{enumerate}
+  \item The post-treatment variable $L$ both \emph{mediates} $A \longrightarrow Y$ and \emph{confounds} $M \longrightarrow Y$, so we can't simply control for it in a single regression model.
+\end{enumerate}
+
+---
+
+\frametitle{G-formula}
+
+\begin{figure}[h]
+\centering
+
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.55]
+
+		\node (1) at (1,2) {$\pmb{V}$};
+		\node (2) at (4,1) {$A$};
+		\node (3) at (7,1) {$L$};
+		\node (4) at (10,1) {$M$};
+		\node (5) at (13,1) {$Y$};
+		
+		\draw [thick,->] (2) to (3);
+		\draw [thick,->] (3) to (4);
+	  \draw [thick,->] (4) to (5);
+	    
+	  \draw [thick,->] (1) to [bend right=20] (2);
+		\draw [thick,->] (1) to [bend left=30] (3);
+		\draw [thick,->] (1) to [bend left=30] (4);
+		\draw [thick,->] (1) to [bend left=30] (5);
+
+		\draw [thick,->] (2) to [bend left=30] (4);
+		\draw [thick,->] (2) to [bend left=30] (5);
+		
+		\draw [thick,->] (3) to [bend left=30] (5);
+
+	\end{tikzpicture}}
+
+\end{figure}
+
+\begin{columns}[onlytextwidth,T]
+  \begin{column}{.5\linewidth}
+    \scriptsize
+    \begin{align*}
+    E[Y]=\sum_m \sum_l \Bigg\{&P(Y|a,m,l,\pmb{v}) \\
+    \times&\vphantom{\Bigg\{}P(m|a,l,\pmb{v}) \\
+    \times&\vphantom{\Bigg\{}P(l|a,\pmb{v}) \\
+    \times&\vphantom{\Bigg\{}P(\pmb{v}) \Bigg\}
+    \end{align*}
+  \end{column}
+  \begin{column}{.5\linewidth}
+    \scriptsize
+    \begin{align*}
+    \vphantom{\Bigg\{}Y &= \beta_0 + A \times (\beta_1 + \beta_2 M + \beta_3 L + \beta_4 \pmb{V}) + \epsilon_Y \\
+    \\
+    M &= \beta_0 + A \times (\beta_1 + \beta_2 L + \beta_3 \pmb{V}) + \epsilon_M \\
+    \\
+    L &= \beta_0 + A \times (\beta_1 + \beta_2 \pmb{V}) + \epsilon_L 
+    \end{align*}
+  \end{column}
+\end{columns}
+
+---
+
+\frametitle{Mediation estimands}
+
+\begin{align*}
+\text{NDE} &= E[Y_{aM_{a^\text{*}}}] - E[Y_{a^\text{*}M_{a^\text{*}}}] \\
+\\
+\text{NIE} &= E[Y_{aM_{a}}] - E[Y_{aM_{a^\text{*}}}] \\
+\end{align*}
+
+\tiny
+>- New counterfactual quantities! These estimands contain the value the mediator would take "naturally" under treatment or no treatment.
+
+>- This gets us closer to methods for "demographic decomposition", a connection I'll talk about at the end. For example, what would rates of college attainment look like for folks racialized as Black if they had the same distribution of parental income as those racialized as white? What would the crude mortality rate look like for Mexico if it had the same age structure as the US?
+
+---
+
+\frametitle{Interactions}
+
+>- What about interactions? What if they effect of M on Y \emph{depends} on treatment? Consider the Black-white income example I just gave. 
+
+>- We can handle treatment-mediator interactions in VanderWeele's (2014) 4-way decomposition.
+
+---
+
+\frametitle{VanderWeele 2014: 4-way}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node [color=red] (1) at (11,1) {$\text{CDE}$};
+		\node [color=red] (2) at (11,5) {$\text{INT}_{\text{ref}}$};
+		\node [color=red] (3) at (11,9) {$\text{INT}_{\text{med}}$};
+		\node [color=red] (4) at (11,13) {$\text{PIE}$};
+		
+		\node (5) at (1,7) {$\text{Total effect}$};
+		\node (6) at (20,7) {$\text{Total effect}$};
+
+		\node (7) at (6,7) {$\text{PAI}$};
+
+		\node (8) at (15,3) {$\text{NDE}$};
+		\node (9) at (15,11) {$\text{NIE}$};
+
+		\draw [thick,->] (2) to (7);
+		\draw [thick,->] (3) to (7);
+		\draw [thick,->] (7) to (5);
+
+		\draw [thick,->] (1) to (8);
+		\draw [thick,->] (2) to (8);
+		\draw [thick,->] (3) to (9);
+		\draw [thick,->] (4) to (9);
+		
+		\draw [thick,->] (8) to (6);
+	    \draw [thick,->] (9) to (6);
+
+		\draw [thick,->] (1) to (5);
+	    \draw [thick,->] (4) to (5);
+	    
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{VanderWeele 2014: 2-way}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node (1) at (11,1) {$\text{CDE}$};
+		\node (2) at (11,5) {$\text{INT}_{\text{ref}}$};
+		\node (3) at (11,9) {$\text{INT}_{\text{med}}$};
+		\node (4) at (11,13) {$\text{PIE}$};
+		
+		\node (5) at (1,7) {$\text{Total effect}$};
+		\node (6) at (20,7) {$\text{Total effect}$};
+
+		\node (7) at (6,7) {$\text{PAI}$};
+
+		\node [color=red] (8) at (15,3) {$\text{NDE}$};
+		\node [color=red] (9) at (15,11) {$\text{NIE}$};
+
+		\draw [thick,->] (2) to (7);
+		\draw [thick,->] (3) to (7);
+		\draw [thick,->] (7) to (5);
+
+		\draw [thick,->] (1) to (8);
+		\draw [thick,->] (2) to (8);
+		\draw [thick,->] (3) to (9);
+		\draw [thick,->] (4) to (9);
+		
+		\draw [thick,->] (8) to (6);
+	    \draw [thick,->] (9) to (6);
+
+		\draw [thick,->] (1) to (5);
+	    \draw [thick,->] (4) to (5);
+	    
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{VanderWeele 2014: 3-way}
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.5]
+		\node [color=red] (1) at (11,1) {$\text{CDE}$};
+		\node (2) at (11,5) {$\text{INT}_{\text{ref}}$};
+		\node (3) at (11,9) {$\text{INT}_{\text{med}}$};
+		\node [color=red] (4) at (11,13) {$\text{PIE}$};
+		
+		\node (5) at (1,7) {$\text{Total effect}$};
+		\node (6) at (20,7) {$\text{Total effect}$};
+
+		\node [color=red] (7) at (6,7) {$\text{PAI}$};
+
+		\node (8) at (15,3) {$\text{NDE}$};
+		\node (9) at (15,11) {$\text{NIE}$};
+
+		\draw [thick,->] (2) to (7);
+		\draw [thick,->] (3) to (7);
+		\draw [thick,->] (7) to (5);
+
+		\draw [thick,->] (1) to (8);
+		\draw [thick,->] (2) to (8);
+		\draw [thick,->] (3) to (9);
+		\draw [thick,->] (4) to (9);
+		
+		\draw [thick,->] (8) to (6);
+	    \draw [thick,->] (9) to (6);
+
+		\draw [thick,->] (1) to (5);
+	    \draw [thick,->] (4) to (5);
+	    
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{Mediation estimands}
+
+\begin{align*}
+\text{NDE} &= E[Y_{xM_{a^\text{*}}}] - E[Y_{a^\text{*}M_{a^\text{*}}}] \\
+\\
+\text{NIE} &= E[Y_{aM_{a}}] - E[Y_{aM_{a^\text{*}}}] \\
+\\
+\text{CDE}_{M=m^\text{*}} &= E[Y_{am^\text{*}}] - E[Y_{a^\text{*}m^\text{*}}] \\
+\\
+\text{PAI}^{(M)} &= E[Y_{am}-Y_{a^\text{*}m}-Y_{am^\text{*}}+Y_{a^\text{*}m^\text{*}}](M_a)] \\
+\\
+\text{PIE}^{(M)} &= E[Y_{a^\text{*}M_{a}}] - E[Y_{a^\text{*}M_{a^\text{*}}}]
+\\
+\end{align*}
+
+---
+
+\frametitle{Estimands (Wang \& Arah 2015)}
+
+``` {r echo = FALSE, out.width= '100%', fig.align = "center"}
+knitr::include_graphics(paste0(fig_dir,"wang_arah1.png"))
+```
+
+---
+
+\frametitle{Estimands (Wang \& Arah 2015)}
+
+``` {r echo = FALSE, out.width= '100%', fig.align = "center"}
+knitr::include_graphics(paste0(fig_dir,"wang_arah2.png"))
+```
+
+---
+
+\frametitle{Implementation}
+
+>- Baoyi Shi, Christine Choirat and Linda Valeri (2021). CMAverse: Causal Mediation Analysis.
+
+``` {r echo = FALSE, out.width= '70%', fig.align = "center"}
+knitr::include_graphics(paste0(fig_dir,"cmaverse.png"))
+```
+
+\begin{itemize}
+  \item Limitations
+  \begin{itemize}
+    \item Multiple mediators can only be considered jointly
+    \item No cumulative effects via time-varying mediators
+    \item No survey weights
+  \end{itemize}
+\end{itemize}
+
+---
+
+\frametitle{Paths package}
+
+>- Zhou & Yamamoto (2023): Tracing Causal Paths from Experimental and Observational Data
+
+``` {r echo = FALSE, out.width= '100%', fig.align = "center"}
+knitr::include_graphics(paste0(fig_dir,"paths.png"))
+```
+
+---
+
+\frametitle{Estimation notes}
+
+>- Randomized analogues
+
+>- Stochastic controlled direct effects
+
+>- The "cross world independence assumption": there is an independence between counterfactual outcome and mediator values “across worlds,” with one being a world in which the exposure is set to A = a for the outcome and the other being a world in which it is set to A = a' for the mediator. Such an exposure assignment cannot occur in real life, making the cross-world independence assumption impossible to verify, even in principle, without relying on other equally problematic assumptions (see Andrews & Didelez, 2021, Epidemiology).
+
+---
+
+\frametitle{Estimation notes}
+
+>- But aren't we just imputing values to consider different counterfactual contrasts? Are we really doing anything \emph{causal}? Is this just "surgery of equations?" 
+
+>- Is demographic decomposition ever causal? See Sudharsanan & Bijlsma (2022, IJE).
+
+>- \emph{My take}: mechanisms are important, and we can use mediation analysis to rule out theoretical alternatives and use a holistic view of "inference to best explanation." Baron-Kenny mediation is bad, but "causal mediation" in the strict potential outcomes sense will probably never meet its own assumptions. Something in the middle, paying attention to complex post-treatment dynamics and combined with good theory, can be useful.
+
+---
+
+\frametitle{Advanced topics in mediation}
+
+>- Loosening assumptions about model misspecification (e.g., machine learning).
+
+>- Multiple mediators. See Zhou & Yamamoto (2023, The Journal of Politics), Graetz & Esposito (2022, Social Forces).
+
+>- Time-varying, cumulative effects with single and multiple mediators. See Lin et al. (2018, Epidemiology). 
+
+>- Formal connections to demographic decomposition. See Sudharsanan & Bijlsma (2022, IJE).
+
+---
+
+\frametitle{Time-varying exposure, outcome, and mediators} 
+
+\begin{figure}[H]
+\centering
+	\large{\begin{tikzpicture}[node distance = 2cm, auto, scale = 0.65]
+		\node (1) at (1,1) {$Y_1$};
+		\node (2) at (1,4) {$M^\text{(1)}_1$};
+		\node (3) at (1,7) {$M^\text{(2)}_1$};
+		\node (4) at (1,10) {$A_1$};
+		\node (5) at (8,1) {$Y_2$};
+		\node (6) at (8,4) {$M^\text{(1)}_2$};
+		\node (7) at (8,7) {$M^\text{(2)}_2$};
+		\node (8) at (8,10) {$A_2$};
+		\node (9) at (15,1) {$Y_t$};
+		\node (10) at (15,4) {$M^\text{(1)}_t$};
+		\node (11) at (15,7) {$M^\text{(2)}_t$};
+		\node (12) at (15,10) {$A_t$};
+		\draw [thick,->] (1) to (5);
+		\draw [thick,->] (1) to (6);
+		\draw [thick,->] (1) to (7);
+		\draw [thick,->] (1) to (8);
+		\draw [thick,->] (2) to (5);
+		\draw [thick,->] (2) to (6);
+		\draw [thick,->] (2) to (7);
+		\draw [thick,->] (2) to (8);
+		\draw [thick,->] (3) to (5);
+		\draw [thick,->] (3) to (6);
+		\draw [thick,->] (3) to (7);
+		\draw [thick,->] (3) to (8);
+		\draw [thick,->] (4) to (5);
+		\draw [thick,->] (4) to (6);
+		\draw [thick,->] (4) to (7);
+		\draw [thick,->] (4) to (8);
+		\draw [thick,->] (5) to (9);
+		\draw [thick,->] (5) to (10);
+		\draw [thick,->] (5) to (11);
+		\draw [thick,->] (5) to (12);
+		\draw [thick,->] (6) to (9);
+		\draw [thick,->] (6) to (10);
+		\draw [thick,->] (6) to (11);
+		\draw [thick,->] (6) to (12);
+		\draw [thick,->] (7) to (9);
+		\draw [thick,->] (7) to (10);
+		\draw [thick,->] (7) to (11);
+		\draw [thick,->] (7) to (12);
+		\draw [thick,->] (8) to (9);
+		\draw [thick,->] (8) to (10);
+		\draw [thick,->] (8) to (11);
+		\draw [thick,->] (8) to (12);
+	\end{tikzpicture}}
+\end{figure}
+
+---
+
+\frametitle{Other theoretical considerations}
+
+>- Drawing the causal field and the problem of \emph{infinite regress}.
+
+>- There are a lot of methods to investigate mechanisms, not just quantitative causal inference.
